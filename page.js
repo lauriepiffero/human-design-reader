@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 const THEME = {
   bg: "#080c18",
@@ -13,125 +13,73 @@ const THEME = {
   textMuted: "#7a7670",
   textDark: "#4a4640",
   error: "#d4564a",
-  success: "#5ab88a",
 };
 
-function resizeImage(file, maxDim = 1600) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width <= maxDim && height <= maxDim) {
-          resolve(e.target.result.split(",")[1]);
-          return;
-        }
-        const canvas = document.createElement("canvas");
-        if (width > height) {
-          height = (height / width) * maxDim;
-          width = maxDim;
-        } else {
-          width = (width / height) * maxDim;
-          height = maxDim;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
+const TYPES = ["Generator", "Manifesting Generator", "Projector", "Manifestor", "Reflector"];
+const AUTHORITIES = [
+  "Émotionnelle (Plexus Solaire)",
+  "Sacrale",
+  "Splénique (Rate)",
+  "Ego / Cœur manifesté",
+  "Ego / Cœur projeté",
+  "Self / G projeté",
+  "Mentale / Environnementale",
+  "Lunaire (Reflector)",
+];
+const PROFILES = ["1/3", "1/4", "2/4", "2/5", "3/5", "3/6", "4/6", "4/1", "5/1", "5/2", "6/2", "6/3"];
+const DEFINITIONS = [
+  "Définition simple",
+  "Définition double (Split)",
+  "Définition triple (Triple Split)",
+  "Définition quadruple (Quadruple Split)",
+  "Aucune définition (Reflector)",
+];
+const STRATEGIES = {
+  "Generator": "Répondre",
+  "Manifesting Generator": "Répondre puis informer",
+  "Projector": "Attendre l'invitation",
+  "Manifestor": "Informer",
+  "Reflector": "Attendre un cycle lunaire (28 jours)",
+};
+const CENTERS = [
+  "Tête",
+  "Ajna",
+  "Gorge",
+  "Centre G (Identité / Soi)",
+  "Cœur (Ego / Volonté)",
+  "Plexus Solaire (Émotionnel)",
+  "Sacral",
+  "Rate (Splénique)",
+  "Racine",
+];
 
-const EXTRACTION_PROMPT = `Tu es un expert en Human Design. Analyse cette image de charte Human Design (bodygraph).
-
-MÉTHODE OBLIGATOIRE — suis ces étapes dans l'ordre :
-
-ÉTAPE 1 — CHERCHE LES DONNÉES TEXTUELLES D'ABORD
-La plupart des chartes affichent le Type, la Stratégie, l'Autorité, le Profil, la Définition et la Croix d'Incarnation en TEXTE à côté ou en dessous du bodygraph. Lis ces textes en priorité. C'est la source la plus fiable.
-
-ÉTAPE 2 — IDENTIFIE LES CENTRES
-Regarde les 9 formes géométriques du bodygraph. Un centre DÉFINI est coloré (rouge, marron, jaune, vert, or, orange...). Un centre NON DÉFINI est blanc, gris très clair ou transparent.
-Les 9 centres de haut en bas :
-- Tête (triangle en haut, pointe vers le haut)
-- Ajna (triangle sous la tête, pointe vers le bas)
-- Gorge (carré)
-- Centre G / Soi (losange au centre)
-- Cœur / Ego / Volonté (petit triangle à droite)
-- Plexus Solaire / Émotionnel (triangle en bas à droite)
-- Sacral (carré en bas au centre)
-- Rate / Splénique (triangle en bas à gauche)
-- Racine (carré tout en bas)
-
-ÉTAPE 3 — VÉRIFIE LE TYPE PAR COHÉRENCE
-Si tu as lu le Type en texte (étape 1), vérifie qu'il est cohérent avec les centres définis :
-- Reflector = ZÉRO centre défini (tous blancs). Si tu vois un seul centre coloré, ce n'est PAS un Reflector.
-- Generator = Sacral défini (coloré), sans connexion moteur-Gorge directe
-- Manifesting Generator = Sacral défini (coloré) + canal moteur connecté à la Gorge
-- Projector = Sacral NON défini (blanc) + au moins un autre centre défini
-- Manifestor = Sacral NON défini (blanc) + Gorge connectée à un centre moteur
-
-Si le texte dit une chose et les centres en disent une autre, signale l'incohérence dans "notes" et fie-toi AUX CENTRES pour déterminer le type.
-
-ÉTAPE 4 — EXTRAIS LE RESTE
-- Canaux : les lignes colorées reliant deux centres (un canal = deux portes connectées)
-- Portes : les petits numéros sur les lignes. Noir/couleur de la personnalité = conscientes. Rouge = inconscientes.
-- Variables/flèches : les 4 flèches en haut et en bas du bodygraph (parfois absentes)
-
-Réponds UNIQUEMENT en JSON valide. Pas de markdown, pas de backticks, pas de texte avant ou après le JSON.
-
-{
-  "type_lu_en_texte": "le type tel qu'écrit sur la charte, ou 'non visible' si pas affiché",
-  "type": "le type final après vérification de cohérence avec les centres",
-  "strategy": "...",
-  "authority": "...",
-  "profile": "...",
-  "definition": "...",
-  "incarnation_cross": "...",
-  "defined_centers": ["liste des centres colorés"],
-  "undefined_centers": ["liste des centres blancs/ouverts"],
-  "channels": ["numéro-numéro"],
-  "gates_conscious": ["numéro"],
-  "gates_unconscious": ["numéro"],
-  "variables": {
-    "digestion": "...",
-    "environment": "...",
-    "perspective": "...",
-    "motivation": "..."
-  },
-  "readable": true,
-  "notes": "toute incohérence ou difficulté de lecture"
-}
-
-Si les variables/flèches ne sont pas visibles, mets "non visible".
-Si l'image n'est PAS une charte HD : {"readable": false, "notes": "Cette image ne semble pas être une charte Human Design."}
-Si certaines données sont illisibles, indique "non lisible" et explique dans "notes".`;
-
-function buildAnalysisPrompt(data, corrections) {
+function buildAnalysisPrompt(data) {
   let dataText = `TYPE : ${data.type}
-STRATÉGIE : ${data.strategy}
+STRATÉGIE : ${STRATEGIES[data.type] || "non renseignée"}
 AUTORITÉ : ${data.authority}
 PROFIL : ${data.profile}
 DÉFINITION : ${data.definition}
-CROIX D'INCARNATION : ${data.incarnation_cross}
-CENTRES DÉFINIS : ${(data.defined_centers || []).join(", ")}
-CENTRES NON DÉFINIS : ${(data.undefined_centers || []).join(", ")}
-CANAUX : ${(data.channels || []).join(", ")}
-PORTES CONSCIENTES : ${(data.gates_conscious || []).join(", ")}
-PORTES INCONSCIENTES : ${(data.gates_unconscious || []).join(", ")}`;
+CROIX D'INCARNATION : ${data.cross || "non renseignée"}
+CENTRES DÉFINIS : ${data.definedCenters.length > 0 ? data.definedCenters.join(", ") : "aucun"}
+CENTRES NON DÉFINIS : ${CENTERS.filter((c) => !data.definedCenters.includes(c)).join(", ")}`;
 
-  if (data.variables) {
-    dataText += `\nDIGESTION : ${data.variables.digestion}
-ENVIRONNEMENT : ${data.variables.environment}
-PERSPECTIVE : ${data.variables.perspective}
-MOTIVATION : ${data.variables.motivation}`;
+  if (data.channels && data.channels.trim()) {
+    dataText += `\nCANAUX ACTIVÉS : ${data.channels}`;
   }
-
-  if (corrections && corrections.trim()) {
-    dataText += `\n\nCORRECTIONS DE L'UTILISATEUR : ${corrections}`;
+  if (data.gates && data.gates.trim()) {
+    dataText += `\nPORTES ACTIVÉES : ${data.gates}`;
+  }
+  if (data.digestion && data.digestion.trim()) {
+    dataText += `\nDIGESTION (PHS) : ${data.digestion}`;
+  }
+  if (data.environment && data.environment.trim()) {
+    dataText += `\nENVIRONNEMENT : ${data.environment}`;
+  }
+  if (data.perspective && data.perspective.trim()) {
+    dataText += `\nPERSPECTIVE : ${data.perspective}`;
+  }
+  if (data.motivation && data.motivation.trim()) {
+    dataText += `\nMOTIVATION : ${data.motivation}`;
   }
 
   return `Tu es un coach d'élite en Human Design. Tu donnes des lectures d'une profondeur et d'une justesse que la personne n'a probablement jamais reçues, même après des années d'introspection. Tu lis entre les lignes sans jamais interpréter à la place du client ni faire d'injonction.
@@ -152,16 +100,17 @@ CENTRES DÉFINIS ET NON DÉFINIS
 Pour chaque centre pertinent : ce que ça implique au quotidien, les conditionnements possibles, les pièges, les forces. Concentre-toi sur les insights les plus puissants plutôt que de lister mécaniquement chaque centre.
 
 CANAUX ET PORTES
-Lecture fine de la combinaison unique de cette personne. Pas une liste — une interprétation de ce que ces activations créent ensemble, les thèmes qui émergent, les talents profonds.
+Si des canaux ou portes ont été fournis, fais une lecture fine de la combinaison unique de cette personne. Pas une liste — une interprétation de ce que ces activations créent ensemble, les thèmes qui émergent, les talents profonds. Si les données ne sont pas disponibles, passe cette section.
 
 CROIX D'INCARNATION
-Le thème de vie profond, la direction existentielle, le rôle que cette personne est ici pour jouer.
+Si la croix a été fournie : le thème de vie profond, la direction existentielle, le rôle que cette personne est ici pour jouer. Si non fournie, passe cette section.
 
 VARIABLES
-Si les données sont disponibles :
+Si les données de digestion, environnement, perspective ou motivation ont été fournies :
 - Digestion / alimentation : recommandations concrètes liées au type de digestion (PHS)
 - Environnement : le type d'environnement dans lequel cette personne s'épanouit
 - Perspective et Motivation : comment cette personne perçoit le monde et ce qui la met en mouvement
+Si non fournies, passe cette section.
 
 ✨ LA RECETTE DU SUCCÈS
 Une synthèse personnalisée et actionnable de ce qui fait que cette personne spécifique est alignée et dans sa puissance. Pas de généralités. Des pistes concrètes et spécifiques à ce Design.
@@ -197,29 +146,22 @@ async function callClaude(messages, maxTokens = 4096) {
   return response.json();
 }
 
-const LOADING_MESSAGES_EXTRACT = [
-  "Lecture de ta charte en cours…",
-  "Identification des centres et canaux…",
-  "Extraction des portes et variables…",
-  "Vérification des données…",
-];
-
-const LOADING_MESSAGES_ANALYSIS = [
+const LOADING_MESSAGES = [
   "Analyse de ton Design en profondeur…",
-  "Exploration de tes canaux et portes…",
+  "Exploration de tes centres et canaux…",
   "Connexion des éléments entre eux…",
   "Formulation de ta recette du succès…",
   "Préparation des questions de réalignement…",
 ];
 
-function LoadingIndicator({ messages }) {
+function LoadingIndicator() {
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
-      setIdx((i) => (i + 1) % messages.length);
-    }, 3000);
+      setIdx((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 3500);
     return () => clearInterval(interval);
-  }, [messages.length]);
+  }, []);
 
   return (
     <div style={{ textAlign: "center", padding: "80px 20px" }}>
@@ -239,30 +181,117 @@ function LoadingIndicator({ messages }) {
           fontFamily: "'Cormorant Garamond', serif",
           fontSize: 20,
           color: THEME.accentLight,
-          transition: "opacity 0.3s",
         }}
       >
-        {messages[idx]}
+        {LOADING_MESSAGES[idx]}
       </p>
       <style>{`@keyframes hdSpin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
 
-function FieldRow({ label, value }) {
-  if (!value || value === "non lisible" || value === "non visible") {
-    return (
-      <div style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: `1px solid ${THEME.cardBorder}` }}>
-        <span style={{ color: THEME.textMuted, minWidth: 160, fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{label}</span>
-        <span style={{ color: THEME.textDark, fontStyle: "italic", fontFamily: "'DM Sans', sans-serif", fontSize: 14 }}>non disponible</span>
-      </div>
-    );
-  }
-  const displayValue = Array.isArray(value) ? value.join(", ") : value;
+function Select({ label, value, onChange, options, placeholder }) {
   return (
-    <div style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: `1px solid ${THEME.cardBorder}` }}>
-      <span style={{ color: THEME.textMuted, minWidth: 160, flexShrink: 0, fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>{label}</span>
-      <span style={{ color: THEME.text, fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.5 }}>{displayValue}</span>
+    <div style={{ marginBottom: 20 }}>
+      <label style={{ display: "block", color: THEME.textMuted, fontSize: 13, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "12px 16px",
+          background: THEME.bg,
+          border: `1px solid ${THEME.cardBorder}`,
+          borderRadius: 10,
+          color: value ? THEME.text : THEME.textDark,
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 14,
+          outline: "none",
+          cursor: "pointer",
+          appearance: "none",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7670' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 16px center",
+        }}
+      >
+        <option value="" style={{ color: THEME.textDark }}>{placeholder || "Sélectionne..."}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt} style={{ color: THEME.text, background: THEME.bg }}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function TextInput({ label, value, onChange, placeholder, multiline }) {
+  const shared = {
+    width: "100%",
+    padding: "12px 16px",
+    background: THEME.bg,
+    border: `1px solid ${THEME.cardBorder}`,
+    borderRadius: 10,
+    color: THEME.text,
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+    lineHeight: 1.5,
+  };
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <label style={{ display: "block", color: THEME.textMuted, fontSize: 13, marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+        {label}
+      </label>
+      {multiline ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...shared, resize: "vertical" }} />
+      ) : (
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={shared} />
+      )}
+    </div>
+  );
+}
+
+function CenterPicker({ selected, onChange }) {
+  const toggle = (center) => {
+    if (selected.includes(center)) {
+      onChange(selected.filter((c) => c !== center));
+    } else {
+      onChange([...selected, center]);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <label style={{ display: "block", color: THEME.textMuted, fontSize: 13, marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>
+        Centres définis (colorés sur ta charte) — clique pour sélectionner
+      </label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {CENTERS.map((center) => {
+          const active = selected.includes(center);
+          return (
+            <button
+              key={center}
+              onClick={() => toggle(center)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: 8,
+                border: `1px solid ${active ? THEME.accent : THEME.cardBorder}`,
+                background: active ? THEME.accentDim : "transparent",
+                color: active ? THEME.accentLight : THEME.textMuted,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {center}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -277,32 +306,12 @@ function formatAnalysis(text) {
     if (isTitle) {
       return (
         <div key={i} style={{ marginBottom: 32 }}>
-          <h3
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 22,
-              color: THEME.accentLight,
-              marginBottom: 16,
-              fontWeight: 500,
-              letterSpacing: "0.02em",
-            }}
-          >
+          <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: THEME.accentLight, marginBottom: 16, fontWeight: 500, letterSpacing: "0.02em" }}>
             {firstLine}
           </h3>
           {lines.slice(1).map((line, j) =>
             line.trim() ? (
-              <p
-                key={j}
-                style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 15,
-                  color: THEME.text,
-                  lineHeight: 1.75,
-                  marginBottom: 12,
-                }}
-              >
-                {line}
-              </p>
+              <p key={j} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: THEME.text, lineHeight: 1.75, marginBottom: 12 }}>{line}</p>
             ) : (
               <div key={j} style={{ height: 8 }} />
             )
@@ -315,18 +324,7 @@ function formatAnalysis(text) {
       <div key={i} style={{ marginBottom: 16 }}>
         {lines.map((line, j) =>
           line.trim() ? (
-            <p
-              key={j}
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                color: THEME.text,
-                lineHeight: 1.75,
-                marginBottom: 12,
-              }}
-            >
-              {line}
-            </p>
+            <p key={j} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: THEME.text, lineHeight: 1.75, marginBottom: 12 }}>{line}</p>
           ) : (
             <div key={j} style={{ height: 8 }} />
           )
@@ -337,87 +335,29 @@ function formatAnalysis(text) {
 }
 
 export default function HumanDesignReader() {
-  const [step, setStep] = useState("upload");
-  const [imageBase64, setImageBase64] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [chartData, setChartData] = useState(null);
-  const [corrections, setCorrections] = useState("");
+  const [step, setStep] = useState("form");
+  const [formData, setFormData] = useState({
+    type: "", authority: "", profile: "", definition: "", cross: "",
+    definedCenters: [], channels: "", gates: "",
+    digestion: "", environment: "", perspective: "", motivation: "",
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [analysis, setAnalysis] = useState("");
   const [error, setError] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef(null);
 
-  const handleFile = useCallback(async (file) => {
-    if (!file || !file.type.startsWith("image/")) {
-      setError("Envoie une image de ta charte Human Design (PNG, JPG, WEBP).");
-      return;
-    }
-    setError(null);
-    setImagePreview(URL.createObjectURL(file));
-    try {
-      const base64 = await resizeImage(file);
-      setImageBase64(base64);
-    } catch (e) {
-      setError("Impossible de lire cette image. Essaie avec un autre format.");
-    }
-  }, []);
+  const updateField = (field) => (value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const handleExtract = useCallback(async () => {
-    if (!imageBase64) return;
-    setStep("extracting");
-    setError(null);
-    try {
-      const result = await callClaude(
-        [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: { type: "base64", media_type: "image/jpeg", data: imageBase64 },
-              },
-              { type: "text", text: EXTRACTION_PROMPT },
-            ],
-          },
-        ],
-        2000
-      );
-
-      const text = result.content.map((c) => c.text || "").join("");
-      const clean = text.replace(/```json|```/g, "").trim();
-      let parsed;
-      try {
-        parsed = JSON.parse(clean);
-      } catch {
-        const jsonMatch = clean.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error("Réponse inattendue");
-        }
-      }
-
-      if (parsed.readable === false) {
-        setError(parsed.notes || "Cette image ne semble pas être une charte Human Design.");
-        setStep("upload");
-        return;
-      }
-      setChartData(parsed);
-      setStep("confirm");
-    } catch (e) {
-      setError(`Erreur lors de la lecture : ${e.message}. Réessaie ou utilise une image plus nette.`);
-      setStep("upload");
-    }
-  }, [imageBase64]);
+  const isFormValid = formData.type && formData.authority && formData.profile && formData.definition;
 
   const handleAnalyze = useCallback(async () => {
-    if (!chartData) return;
+    if (!isFormValid) return;
     setStep("analyzing");
     setError(null);
     try {
-      const prompt = buildAnalysisPrompt(chartData, corrections);
+      const prompt = buildAnalysisPrompt(formData);
       const result = await callClaude([{ role: "user", content: prompt }], 4096);
-
       const text = result.content.map((c) => c.text || "").join("");
       setAnalysis(text);
       setStep("result");
@@ -438,9 +378,9 @@ export default function HumanDesignReader() {
       }
     } catch (e) {
       setError(`Erreur lors de l'analyse : ${e.message}`);
-      setStep("confirm");
+      setStep("form");
     }
-  }, [chartData, corrections]);
+  }, [formData, isFormValid]);
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
@@ -462,14 +402,14 @@ export default function HumanDesignReader() {
       </style>
     </head><body>
       <h1>Ta Lecture Human Design</h1>
-      <p class="subtitle">Type ${chartData?.type || ""} — Profil ${chartData?.profile || ""}</p>
+      <p class="subtitle">Type ${formData.type} — Profil ${formData.profile}</p>
       <div class="data-section">
-        <div class="data-row"><span class="data-label">Type</span><span>${chartData?.type || ""}</span></div>
-        <div class="data-row"><span class="data-label">Stratégie</span><span>${chartData?.strategy || ""}</span></div>
-        <div class="data-row"><span class="data-label">Autorité</span><span>${chartData?.authority || ""}</span></div>
-        <div class="data-row"><span class="data-label">Profil</span><span>${chartData?.profile || ""}</span></div>
-        <div class="data-row"><span class="data-label">Définition</span><span>${chartData?.definition || ""}</span></div>
-        <div class="data-row"><span class="data-label">Croix</span><span>${chartData?.incarnation_cross || ""}</span></div>
+        <div class="data-row"><span class="data-label">Type</span><span>${formData.type}</span></div>
+        <div class="data-row"><span class="data-label">Stratégie</span><span>${STRATEGIES[formData.type] || ""}</span></div>
+        <div class="data-row"><span class="data-label">Autorité</span><span>${formData.authority}</span></div>
+        <div class="data-row"><span class="data-label">Profil</span><span>${formData.profile}</span></div>
+        <div class="data-row"><span class="data-label">Définition</span><span>${formData.definition}</span></div>
+        ${formData.cross ? `<div class="data-row"><span class="data-label">Croix</span><span>${formData.cross}</span></div>` : ""}
       </div>
       ${analysis
         .split(/\n(?=VUE D'ENSEMBLE|PROFIL |CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/)
@@ -478,10 +418,7 @@ export default function HumanDesignReader() {
           const first = lines[0];
           const isT = /^(VUE D'ENSEMBLE|PROFIL |CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/.test(first);
           if (isT) {
-            return `<h3>${first}</h3>${lines
-              .slice(1)
-              .map((l) => (l.trim() ? `<p>${l}</p>` : ""))
-              .join("")}`;
+            return `<h3>${first}</h3>${lines.slice(1).map((l) => (l.trim() ? `<p>${l}</p>` : "")).join("")}`;
           }
           return lines.map((l) => (l.trim() ? `<p>${l}</p>` : "")).join("");
         })
@@ -492,20 +429,11 @@ export default function HumanDesignReader() {
   };
 
   const handleReset = () => {
-    setStep("upload");
-    setImageBase64(null);
-    setImagePreview(null);
-    setChartData(null);
-    setCorrections("");
+    setStep("form");
+    setFormData({ type: "", authority: "", profile: "", definition: "", cross: "", definedCenters: [], channels: "", gates: "", digestion: "", environment: "", perspective: "", motivation: "" });
+    setShowAdvanced(false);
     setAnalysis("");
     setError(null);
-  };
-
-  const containerStyle = {
-    minHeight: "100vh",
-    background: THEME.bg,
-    color: THEME.text,
-    fontFamily: "'DM Sans', sans-serif",
   };
 
   const cardStyle = {
@@ -518,299 +446,117 @@ export default function HumanDesignReader() {
   };
 
   const btnPrimary = {
-    background: THEME.accent,
-    color: "#0a0e18",
-    border: "none",
-    borderRadius: 10,
-    padding: "14px 32px",
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 15,
-    fontWeight: 500,
-    cursor: "pointer",
-    transition: "all 0.2s",
+    background: THEME.accent, color: "#0a0e18", border: "none", borderRadius: 10,
+    padding: "14px 32px", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 500, cursor: "pointer",
   };
-
+  const btnDisabled = { ...btnPrimary, opacity: 0.4, cursor: "not-allowed" };
   const btnSecondary = {
-    background: "transparent",
-    color: THEME.textMuted,
-    border: `1px solid ${THEME.cardBorder}`,
-    borderRadius: 10,
-    padding: "12px 24px",
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 14,
-    cursor: "pointer",
-    transition: "all 0.2s",
+    background: "transparent", color: THEME.textMuted, border: `1px solid ${THEME.cardBorder}`,
+    borderRadius: 10, padding: "12px 24px", fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: "pointer",
   };
 
   return (
-    <div style={containerStyle}>
+    <div style={{ minHeight: "100vh", background: THEME.bg, color: THEME.text, fontFamily: "'DM Sans', sans-serif" }}>
       <div style={{ maxWidth: 740, margin: "0 auto", padding: "40px 20px" }}>
-        {/* Header */}
+
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <p style={{ fontSize: 14, color: THEME.accent, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>
-            ✨ Human Design
-          </p>
-          <h1
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 36,
-              fontWeight: 500,
-              color: THEME.accentLight,
-              margin: "0 0 8px",
-              letterSpacing: "0.02em",
-            }}
-          >
+          <p style={{ fontSize: 14, color: THEME.accent, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 8 }}>✨ Human Design</p>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 36, fontWeight: 500, color: THEME.accentLight, margin: "0 0 8px", letterSpacing: "0.02em" }}>
             Ta Lecture Personnalisée
           </h1>
           <p style={{ color: THEME.textMuted, fontSize: 14, lineHeight: 1.6 }}>
-            Uploade ta charte et reçois une analyse profonde de ton Design
+            Renseigne les informations de ta charte et reçois une analyse profonde de ton Design
           </p>
         </div>
 
-        {/* Error */}
         {error && (
-          <div
-            style={{
-              background: "rgba(212,86,74,0.1)",
-              border: "1px solid rgba(212,86,74,0.25)",
-              borderRadius: 10,
-              padding: "14px 20px",
-              marginBottom: 24,
-              color: THEME.error,
-              fontSize: 14,
-              lineHeight: 1.5,
-            }}
-          >
+          <div style={{ background: "rgba(212,86,74,0.1)", border: "1px solid rgba(212,86,74,0.25)", borderRadius: 10, padding: "14px 20px", marginBottom: 24, color: THEME.error, fontSize: 14, lineHeight: 1.5 }}>
             {error}
           </div>
         )}
 
-        {/* Upload */}
-        {step === "upload" && (
+        {step === "form" && (
           <div style={cardStyle}>
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOver(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleFile(file);
-              }}
-              style={{
-                border: `2px dashed ${dragOver ? THEME.accent : THEME.cardBorder}`,
-                borderRadius: 12,
-                padding: imagePreview ? "16px" : "60px 20px",
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "all 0.25s",
-                background: dragOver ? THEME.accentDim : "transparent",
-              }}
-            >
-              {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="Charte HD"
-                  style={{ maxWidth: "100%", maxHeight: 400, borderRadius: 8, objectFit: "contain" }}
-                />
-              ) : (
-                <>
-                  <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.5 }}>🧬</div>
-                  <p style={{ color: THEME.text, fontSize: 15, marginBottom: 6 }}>
-                    Glisse ta charte ici ou clique pour choisir un fichier
-                  </p>
-                  <p style={{ color: THEME.textMuted, fontSize: 13 }}>
-                    PNG, JPG ou WEBP — de préférence lisible et en bonne résolution
-                  </p>
-                </>
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={(e) => handleFile(e.target.files?.[0])}
-            />
-            {imagePreview && (
-              <div style={{ display: "flex", gap: 12, marginTop: 20, justifyContent: "center" }}>
-                <button
-                  onClick={() => { setImagePreview(null); setImageBase64(null); }}
-                  style={btnSecondary}
-                >
-                  Changer d'image
-                </button>
-                <button onClick={handleExtract} style={btnPrimary}>
-                  Analyser ma charte →
-                </button>
-              </div>
-            )}
-            <div
-              style={{
-                marginTop: 28,
-                padding: "16px 20px",
-                background: THEME.accentDim,
-                borderRadius: 10,
-                borderLeft: `3px solid ${THEME.accent}`,
-              }}
-            >
-              <p style={{ color: THEME.textMuted, fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-                Pour une lecture optimale, utilise une charte générée sur myBodyGraph, Genetic Matrix ou Jovian Archive. Plus l'image est lisible, plus l'analyse sera précise.
+            <div style={{ padding: "16px 20px", background: THEME.accentDim, borderRadius: 10, borderLeft: `3px solid ${THEME.accent}`, marginBottom: 28 }}>
+              <p style={{ color: THEME.text, fontSize: 14, lineHeight: 1.6, margin: "0 0 8px" }}>
+                Tu ne connais pas encore ton Design ? Génère ta charte gratuitement sur l'un de ces sites, puis reporte les infos ci-dessous :
               </p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <a href="https://www.mybodygraph.com/" target="_blank" rel="noopener noreferrer" style={{ color: THEME.accent, fontSize: 13, textDecoration: "underline" }}>myBodyGraph.com</a>
+                <a href="https://www.geneticmatrix.com/" target="_blank" rel="noopener noreferrer" style={{ color: THEME.accent, fontSize: 13, textDecoration: "underline" }}>GeneticMatrix.com</a>
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Extracting */}
-        {step === "extracting" && (
-          <div style={cardStyle}>
-            <LoadingIndicator messages={LOADING_MESSAGES_EXTRACT} />
-          </div>
-        )}
+            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: THEME.accentLight, marginBottom: 20, fontWeight: 500 }}>Les essentiels</p>
 
-        {/* Confirm */}
-        {step === "confirm" && chartData && (
-          <div style={cardStyle}>
-            <h2
+            <Select label="Type" value={formData.type} onChange={updateField("type")} options={TYPES} placeholder="Sélectionne ton type..." />
+            <Select label="Autorité" value={formData.authority} onChange={updateField("authority")} options={AUTHORITIES} placeholder="Sélectionne ton autorité..." />
+            <Select label="Profil" value={formData.profile} onChange={updateField("profile")} options={PROFILES} placeholder="Sélectionne ton profil..." />
+            <Select label="Définition" value={formData.definition} onChange={updateField("definition")} options={DEFINITIONS} placeholder="Sélectionne ta définition..." />
+
+            <TextInput label="Croix d'Incarnation (optionnel)" value={formData.cross} onChange={updateField("cross")} placeholder="Ex: Croix du Sphinx de l'Angle Droit (1/2 | 7/13)" />
+
+            <CenterPicker selected={formData.definedCenters} onChange={updateField("definedCenters")} />
+
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
               style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 24,
-                color: THEME.accentLight,
-                marginBottom: 8,
-                fontWeight: 500,
+                background: "transparent", border: "none", color: THEME.accent,
+                fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: "pointer",
+                padding: "8px 0", marginBottom: 8, display: "flex", alignItems: "center", gap: 8,
               }}
             >
-              Vérifie tes données
-            </h2>
-            <p style={{ color: THEME.textMuted, fontSize: 14, marginBottom: 24, lineHeight: 1.5 }}>
-              Voici ce que j'ai lu sur ta charte. Vérifie que tout est correct avant de lancer l'analyse en profondeur.
-            </p>
+              <span style={{ transform: showAdvanced ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s", display: "inline-block" }}>▸</span>
+              Pour une lecture encore plus profonde (canaux, portes, variables)
+            </button>
 
-            <div style={{ marginBottom: 24 }}>
-              <FieldRow label="Type" value={chartData.type} />
-              <FieldRow label="Stratégie" value={chartData.strategy} />
-              <FieldRow label="Autorité" value={chartData.authority} />
-              <FieldRow label="Profil" value={chartData.profile} />
-              <FieldRow label="Définition" value={chartData.definition} />
-              <FieldRow label="Croix d'Incarnation" value={chartData.incarnation_cross} />
-              <FieldRow label="Centres définis" value={chartData.defined_centers} />
-              <FieldRow label="Centres non définis" value={chartData.undefined_centers} />
-              <FieldRow label="Canaux" value={chartData.channels} />
-              <FieldRow label="Portes conscientes" value={chartData.gates_conscious} />
-              <FieldRow label="Portes inconscientes" value={chartData.gates_unconscious} />
-              {chartData.variables && (
-                <>
-                  <FieldRow label="Digestion" value={chartData.variables.digestion} />
-                  <FieldRow label="Environnement" value={chartData.variables.environment} />
-                  <FieldRow label="Perspective" value={chartData.variables.perspective} />
-                  <FieldRow label="Motivation" value={chartData.variables.motivation} />
-                </>
-              )}
-            </div>
+            {showAdvanced && (
+              <div style={{ padding: "20px 0 0", borderTop: `1px solid ${THEME.cardBorder}`, marginTop: 12 }}>
+                <TextInput label="Canaux activés" value={formData.channels} onChange={updateField("channels")} placeholder="Ex: 20-34 (Canal du Charisme), 57-10..." multiline />
+                <TextInput label="Portes activées" value={formData.gates} onChange={updateField("gates")} placeholder="Ex: 1, 7, 10, 13, 25, 34, 46, 51..." multiline />
 
-            {chartData.notes && chartData.notes !== "" && (
-              <div
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(196,163,90,0.08)",
-                  borderRadius: 8,
-                  marginBottom: 20,
-                  fontSize: 13,
-                  color: THEME.textMuted,
-                  lineHeight: 1.5,
-                }}
-              >
-                Note : {chartData.notes}
+                <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: THEME.accentLight, margin: "24px 0 16px", fontWeight: 500 }}>Variables (flèches)</p>
+                <TextInput label="Digestion (PHS)" value={formData.digestion} onChange={updateField("digestion")} placeholder="Ex: Alternating (chaud), Consecutive, Direct Light..." />
+                <TextInput label="Environnement" value={formData.environment} onChange={updateField("environment")} placeholder="Ex: Markets (externe), Caves, Kitchens, Mountains..." />
+                <TextInput label="Perspective (Vision)" value={formData.perspective} onChange={updateField("perspective")} placeholder="Ex: Survival, Possibility, Power, Wanting..." />
+                <TextInput label="Motivation" value={formData.motivation} onChange={updateField("motivation")} placeholder="Ex: Fear, Hope, Desire, Need, Guilt, Innocence..." />
               </div>
             )}
 
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", color: THEME.textMuted, fontSize: 13, marginBottom: 8 }}>
-                Quelque chose à corriger ? Indique-le ici :
-              </label>
-              <textarea
-                value={corrections}
-                onChange={(e) => setCorrections(e.target.value)}
-                placeholder="Ex: Mon type est Projector, pas Generator. Mon profil est 4/6..."
-                style={{
-                  width: "100%",
-                  minHeight: 80,
-                  background: THEME.bg,
-                  border: `1px solid ${THEME.cardBorder}`,
-                  borderRadius: 10,
-                  padding: "12px 16px",
-                  color: THEME.text,
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 14,
-                  resize: "vertical",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  lineHeight: 1.5,
-                }}
-              />
-            </div>
-
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={handleReset} style={btnSecondary}>
-                ← Recommencer
-              </button>
-              <button onClick={handleAnalyze} style={btnPrimary}>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 28 }}>
+              <button onClick={handleAnalyze} disabled={!isFormValid} style={isFormValid ? btnPrimary : btnDisabled}>
                 Lancer l'analyse en profondeur →
               </button>
             </div>
           </div>
         )}
 
-        {/* Analyzing */}
         {step === "analyzing" && (
-          <div style={cardStyle}>
-            <LoadingIndicator messages={LOADING_MESSAGES_ANALYSIS} />
-          </div>
+          <div style={cardStyle}><LoadingIndicator /></div>
         )}
 
-        {/* Result */}
         {step === "result" && (
           <div>
             <div style={{ ...cardStyle, marginBottom: 20 }}>
               <div style={{ marginBottom: 32, paddingBottom: 24, borderBottom: `1px solid ${THEME.cardBorder}` }}>
-                <p style={{ color: THEME.accent, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
-                  Lecture complète
-                </p>
-                <h2
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 28,
-                    color: THEME.accentLight,
-                    fontWeight: 500,
-                    margin: "0 0 8px",
-                  }}
-                >
-                  {chartData?.type} — Profil {chartData?.profile}
+                <p style={{ color: THEME.accent, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Lecture complète</p>
+                <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, color: THEME.accentLight, fontWeight: 500, margin: "0 0 8px" }}>
+                  {formData.type} — Profil {formData.profile}
                 </h2>
-                <p style={{ color: THEME.textMuted, fontSize: 14 }}>
-                  {chartData?.incarnation_cross}
-                </p>
+                {formData.cross && <p style={{ color: THEME.textMuted, fontSize: 14 }}>{formData.cross}</p>}
               </div>
               {formatAnalysis(analysis)}
             </div>
 
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 24 }}>
-              <button onClick={handleReset} style={btnSecondary}>
-                ← Nouvelle lecture
-              </button>
-              <button onClick={handlePrint} style={btnPrimary}>
-                Sauvegarder en PDF
-              </button>
+              <button onClick={handleReset} style={btnSecondary}>← Nouvelle lecture</button>
+              <button onClick={handlePrint} style={btnPrimary}>Sauvegarder en PDF</button>
             </div>
           </div>
         )}
 
-        {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 60, paddingBottom: 20 }}>
-          <p style={{ color: THEME.textDark, fontSize: 12 }}>
-            Propulsé par Claude · Lecture à titre indicatif
-          </p>
+          <p style={{ color: THEME.textDark, fontSize: 12 }}>Propulsé par Claude · Lecture à titre indicatif</p>
         </div>
       </div>
     </div>
