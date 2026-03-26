@@ -46,23 +46,56 @@ function resizeImage(file, maxDim = 1600) {
   });
 }
 
-const EXTRACTION_PROMPT = `Tu es un expert en Human Design. Analyse cette image de charte Human Design (bodygraph) et extrais TOUTES les données visibles.
+const EXTRACTION_PROMPT = `Tu es un expert en Human Design. Analyse cette image de charte Human Design (bodygraph).
+
+MÉTHODE OBLIGATOIRE — suis ces étapes dans l'ordre :
+
+ÉTAPE 1 — CHERCHE LES DONNÉES TEXTUELLES D'ABORD
+La plupart des chartes affichent le Type, la Stratégie, l'Autorité, le Profil, la Définition et la Croix d'Incarnation en TEXTE à côté ou en dessous du bodygraph. Lis ces textes en priorité. C'est la source la plus fiable.
+
+ÉTAPE 2 — IDENTIFIE LES CENTRES
+Regarde les 9 formes géométriques du bodygraph. Un centre DÉFINI est coloré (rouge, marron, jaune, vert, or, orange...). Un centre NON DÉFINI est blanc, gris très clair ou transparent.
+Les 9 centres de haut en bas :
+- Tête (triangle en haut, pointe vers le haut)
+- Ajna (triangle sous la tête, pointe vers le bas)
+- Gorge (carré)
+- Centre G / Soi (losange au centre)
+- Cœur / Ego / Volonté (petit triangle à droite)
+- Plexus Solaire / Émotionnel (triangle en bas à droite)
+- Sacral (carré en bas au centre)
+- Rate / Splénique (triangle en bas à gauche)
+- Racine (carré tout en bas)
+
+ÉTAPE 3 — VÉRIFIE LE TYPE PAR COHÉRENCE
+Si tu as lu le Type en texte (étape 1), vérifie qu'il est cohérent avec les centres définis :
+- Reflector = ZÉRO centre défini (tous blancs). Si tu vois un seul centre coloré, ce n'est PAS un Reflector.
+- Generator = Sacral défini (coloré), sans connexion moteur-Gorge directe
+- Manifesting Generator = Sacral défini (coloré) + canal moteur connecté à la Gorge
+- Projector = Sacral NON défini (blanc) + au moins un autre centre défini
+- Manifestor = Sacral NON défini (blanc) + Gorge connectée à un centre moteur
+
+Si le texte dit une chose et les centres en disent une autre, signale l'incohérence dans "notes" et fie-toi AUX CENTRES pour déterminer le type.
+
+ÉTAPE 4 — EXTRAIS LE RESTE
+- Canaux : les lignes colorées reliant deux centres (un canal = deux portes connectées)
+- Portes : les petits numéros sur les lignes. Noir/couleur de la personnalité = conscientes. Rouge = inconscientes.
+- Variables/flèches : les 4 flèches en haut et en bas du bodygraph (parfois absentes)
 
 Réponds UNIQUEMENT en JSON valide. Pas de markdown, pas de backticks, pas de texte avant ou après le JSON.
 
-Structure exacte à suivre :
 {
-  "type": "...",
+  "type_lu_en_texte": "le type tel qu'écrit sur la charte, ou 'non visible' si pas affiché",
+  "type": "le type final après vérification de cohérence avec les centres",
   "strategy": "...",
   "authority": "...",
   "profile": "...",
   "definition": "...",
   "incarnation_cross": "...",
-  "defined_centers": ["..."],
-  "undefined_centers": ["..."],
-  "channels": ["numéro-numéro : nom"],
-  "gates_conscious": ["numéro : nom"],
-  "gates_unconscious": ["numéro : nom"],
+  "defined_centers": ["liste des centres colorés"],
+  "undefined_centers": ["liste des centres blancs/ouverts"],
+  "channels": ["numéro-numéro"],
+  "gates_conscious": ["numéro"],
+  "gates_unconscious": ["numéro"],
   "variables": {
     "digestion": "...",
     "environment": "...",
@@ -70,21 +103,11 @@ Structure exacte à suivre :
     "motivation": "..."
   },
   "readable": true,
-  "notes": "..."
+  "notes": "toute incohérence ou difficulté de lecture"
 }
 
-Rappels importants :
-- Les 9 centres : Tête, Ajna, Gorge, Centre G (Soi/Identité), Cœur (Ego/Volonté), Plexus Solaire (Émotionnel), Sacral, Rate (Splénique), Racine
-- Les 5 types : Manifestor, Generator, Manifesting Generator, Projector, Reflector
-- Un Reflector n'a AUCUN centre défini (tous les centres sont blancs/ouverts)
-- Un Generator ou Manifesting Generator a TOUJOURS le Sacral défini (coloré)
-- Un Projector n'a PAS le Sacral défini mais a au moins un autre centre défini
-- Un Manifestor a le centre de la Gorge connecté à un centre moteur mais PAS le Sacral
-- Un centre défini apparaît coloré/rempli. Un centre non défini apparaît blanc ou transparent.
-- Les portes conscientes sont généralement en noir, les inconscientes en rouge
-- Si les variables/flèches ne sont pas visibles, mets "non visible" pour chaque
-
-Si l'image n'est PAS une charte HD, réponds : {"readable": false, "notes": "Cette image ne semble pas être une charte Human Design."}
+Si les variables/flèches ne sont pas visibles, mets "non visible".
+Si l'image n'est PAS une charte HD : {"readable": false, "notes": "Cette image ne semble pas être une charte Human Design."}
 Si certaines données sont illisibles, indique "non lisible" et explique dans "notes".`;
 
 function buildAnalysisPrompt(data, corrections) {
