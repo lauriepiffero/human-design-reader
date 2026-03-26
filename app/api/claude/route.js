@@ -12,7 +12,17 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { messages, max_tokens = 4096 } = body;
+    const { messages, max_tokens = 4096, system } = body;
+
+    const requestBody = {
+      model: "claude-sonnet-4-20250514",
+      max_tokens,
+      messages,
+    };
+
+    if (system) {
+      requestBody.system = system;
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -21,11 +31,7 @@ export async function POST(request) {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens,
-        messages,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
