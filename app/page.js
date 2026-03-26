@@ -65,8 +65,11 @@ Ce qui te distingue :
 
 TON : direct, humain, profond. Pas de jargon inutile. Quand tu utilises un terme HD, tu l'expliques immédiatement par ce que ça signifie dans la vraie vie. Tu tutoies la personne. Tu ne fais jamais d'injonction ("tu dois", "il faut"). Tu éclaires, tu questionnes, tu révèles.
 
+LANGUE : tout doit être écrit en français. Traduis systématiquement TOUS les termes anglais du Human Design. Par exemple : "Inner Authority" = "Autorité intérieure", "Not-Self Theme" = "Thème du Faux-Soi", "Signature" = "Signature", "Open Center" = "Centre ouvert", "Defined Center" = "Centre défini", "Channel" = "Canal", "Gate" = "Porte", "Split Definition" = "Définition double", "Cross of Incarnation" = "Croix d'Incarnation", "Primary Health System" = "Système de santé primaire", "Environment" = "Environnement", etc. Aucun mot ou expression anglaise dans ta réponse, sauf si le terme français n'existe pas.
+
 FORMAT : 
-- Pas de gras, pas d'astérisques, pas de markdown.
+- Tu peux utiliser **gras** pour mettre en valeur les éléments importants (avec parcimonie).
+- Pas de listes à puces. Écris en paragraphes fluides.
 - Aère le texte naturellement avec des sauts de ligne.
 - Émojis autorisés avec parcimonie, uniquement : ✨🔮🧬👌🏼🟡
 - Ne cite jamais tes sources.`;
@@ -156,7 +159,7 @@ La personne te pose maintenant des questions sur son Design. Réponds avec la m�
 - Explorer des aspects que la lecture n'a pas couverts
 - Parler de l'impact de son Design sur une situation spécifique (relation, travail, décision, parentalité, argent...)
 
-Garde le même ton : direct, humain, profond, jamais scolaire. Tutoie-la. Pas de gras, pas de markdown. Émojis avec parcimonie (✨🔮🧬👌🏼🟡). Réponds de manière concise — pas besoin de refaire une lecture complète à chaque question, va droit au cœur de ce qui est demandé.`;
+Garde le même ton : direct, humain, profond, jamais scolaire. Tutoie-la. Tu peux utiliser **gras** avec parcimonie pour mettre en valeur. Pas de listes à puces, écris en paragraphes. Émojis avec parcimonie (✨🔮🧬👌🏼🟡). Tout en français, traduis systématiquement tous les termes anglais du HD. Réponds de manière concise — pas besoin de refaire une lecture complète à chaque question, va droit au cœur de ce qui est demandé.`;
 }
 
 async function callClaude(messages, maxTokens = 4096, systemPrompt = null) {
@@ -238,14 +241,24 @@ function CenterPicker({ selected, onChange }) {
   );
 }
 
+function renderLine(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} style={{ color: THEME.accentLight, fontWeight: 500 }}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
 function formatText(text) {
   const sections = text.split(/\n(?=VUE D'ENSEMBLE|PROFIL |LA DANSE|CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/);
   return sections.map((section, i) => {
     const lines = section.trim().split("\n");
     const first = lines[0];
     const isT = /^(VUE D'ENSEMBLE|PROFIL |LA DANSE|CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/.test(first);
-    if (isT) return <div key={i} style={{ marginBottom: 32 }}><h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: THEME.accentLight, marginBottom: 16, fontWeight: 500, letterSpacing: "0.02em" }}>{first}</h3>{lines.slice(1).map((l, j) => l.trim() ? <p key={j} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: THEME.text, lineHeight: 1.75, marginBottom: 12 }}>{l}</p> : <div key={j} style={{ height: 8 }} />)}</div>;
-    return <div key={i} style={{ marginBottom: 16 }}>{lines.map((l, j) => l.trim() ? <p key={j} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: THEME.text, lineHeight: 1.75, marginBottom: 12 }}>{l}</p> : <div key={j} style={{ height: 8 }} />)}</div>;
+    if (isT) return <div key={i} style={{ marginBottom: 32 }}><h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: THEME.accentLight, marginBottom: 16, fontWeight: 500, letterSpacing: "0.02em" }}>{first}</h3>{lines.slice(1).map((l, j) => l.trim() ? <p key={j} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: THEME.text, lineHeight: 1.75, marginBottom: 12 }}>{renderLine(l)}</p> : <div key={j} style={{ height: 8 }} />)}</div>;
+    return <div key={i} style={{ marginBottom: 16 }}>{lines.map((l, j) => l.trim() ? <p key={j} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: THEME.text, lineHeight: 1.75, marginBottom: 12 }}>{renderLine(l)}</p> : <div key={j} style={{ height: 8 }} />)}</div>;
   });
 }
 
@@ -255,7 +268,7 @@ function ChatMessage({ role, content }) {
     <div style={{ display: "flex", justifyContent: isUser ? "flex-end" : "flex-start", marginBottom: 16 }}>
       <div style={{ maxWidth: "85%", padding: "14px 18px", borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px", background: isUser ? THEME.accentDim : THEME.cardBg, border: `1px solid ${isUser ? "rgba(196,163,90,0.25)" : THEME.cardBorder}` }}>
         {content.split("\n").map((line, i) =>
-          line.trim() ? <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: THEME.text, lineHeight: 1.7, margin: "0 0 8px" }}>{line}</p> : <div key={i} style={{ height: 6 }} />
+          line.trim() ? <p key={i} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: THEME.text, lineHeight: 1.7, margin: "0 0 8px" }}>{renderLine(line)}</p> : <div key={i} style={{ height: 6 }} />
         )}
       </div>
     </div>
@@ -310,7 +323,7 @@ export default function HumanDesignReader() {
 
   const handlePrint = () => {
     const w = window.open("", "_blank"); if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lecture Human Design</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"><style>body{font-family:'DM Sans',sans-serif;color:#1a1a1a;max-width:700px;margin:40px auto;padding:0 24px;line-height:1.75;font-size:14px}h1{font-family:'Cormorant Garamond',serif;font-size:28px;margin-bottom:8px;font-weight:500}h3{font-family:'Cormorant Garamond',serif;font-size:20px;margin-top:32px;margin-bottom:12px;font-weight:500;color:#8a7340}.subtitle{color:#888;font-size:13px;margin-bottom:32px}.ds{background:#f8f6f1;padding:20px 24px;border-radius:8px;margin-bottom:32px}.dr{display:flex;gap:12px;padding:4px 0;font-size:13px}.dl{color:#888;min-width:140px}p{margin-bottom:10px}@media print{body{margin:20px}}</style></head><body><h1>Ta Lecture Human Design</h1><p class="subtitle">Type ${formData.type} — Profil ${formData.profile}</p><div class="ds"><div class="dr"><span class="dl">Type</span><span>${formData.type}</span></div><div class="dr"><span class="dl">Stratégie</span><span>${STRATEGIES[formData.type]||""}</span></div><div class="dr"><span class="dl">Autorité</span><span>${formData.authority}</span></div><div class="dr"><span class="dl">Profil</span><span>${formData.profile}</span></div><div class="dr"><span class="dl">Définition</span><span>${formData.definition}</span></div>${formData.cross?`<div class="dr"><span class="dl">Croix</span><span>${formData.cross}</span></div>`:""}</div>${analysis.split(/\n(?=VUE D'ENSEMBLE|PROFIL |LA DANSE|CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/).map(s=>{const l=s.trim().split("\n"),f=l[0];if(/^(VUE D'ENSEMBLE|PROFIL |LA DANSE|CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/.test(f))return`<h3>${f}</h3>${l.slice(1).map(x=>x.trim()?`<p>${x}</p>`:"").join("")}`;return l.map(x=>x.trim()?`<p>${x}</p>`:"").join("")}).join("")}</body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lecture Human Design</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"><style>body{font-family:'DM Sans',sans-serif;color:#1a1a1a;max-width:700px;margin:40px auto;padding:0 24px;line-height:1.75;font-size:14px}h1{font-family:'Cormorant Garamond',serif;font-size:28px;margin-bottom:8px;font-weight:500}h3{font-family:'Cormorant Garamond',serif;font-size:20px;margin-top:32px;margin-bottom:12px;font-weight:500;color:#8a7340}.subtitle{color:#888;font-size:13px;margin-bottom:32px}.ds{background:#f8f6f1;padding:20px 24px;border-radius:8px;margin-bottom:32px}.dr{display:flex;gap:12px;padding:4px 0;font-size:13px}.dl{color:#888;min-width:140px}p{margin-bottom:10px}strong{font-weight:600;color:#5a4a2a}@media print{body{margin:20px}}</style></head><body><h1>Ta Lecture Human Design</h1><p class="subtitle">Type ${formData.type} — Profil ${formData.profile}</p><div class="ds"><div class="dr"><span class="dl">Type</span><span>${formData.type}</span></div><div class="dr"><span class="dl">Stratégie</span><span>${STRATEGIES[formData.type]||""}</span></div><div class="dr"><span class="dl">Autorité</span><span>${formData.authority}</span></div><div class="dr"><span class="dl">Profil</span><span>${formData.profile}</span></div><div class="dr"><span class="dl">Définition</span><span>${formData.definition}</span></div>${formData.cross?`<div class="dr"><span class="dl">Croix</span><span>${formData.cross}</span></div>`:""}</div>${analysis.split(/\n(?=VUE D'ENSEMBLE|PROFIL |LA DANSE|CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/).map(s=>{const l=s.trim().split("\n"),f=l[0];const bold=x=>x.replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");if(/^(VUE D'ENSEMBLE|PROFIL |LA DANSE|CENTRES |CANAUX |CROIX |VARIABLES|✨|🔮)/.test(f))return`<h3>${f}</h3>${l.slice(1).map(x=>x.trim()?`<p>${bold(x)}</p>`:"").join("")}`;return l.map(x=>x.trim()?`<p>${bold(x)}</p>`:"").join("")}).join("")}</body></html>`);
     w.document.close(); setTimeout(() => w.print(), 600);
   };
 
